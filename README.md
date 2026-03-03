@@ -1,32 +1,80 @@
-# TH3 - Call API App (Menu món ăn)
+# TH3 - Ứng dụng Menu Ẩm Thực (Flutter)
 
-Ứng dụng Flutter hiển thị menu món ăn bằng dữ liệu mạng (Public API từ TheMealDB), đáp ứng yêu cầu bài thực hành 3:
+Ứng dụng Flutter theo định hướng **khám phá/giới thiệu món ăn**.
 
-- Có đủ 3 trạng thái: `Loading` / `Success` / `Error + Retry`.
-- Dữ liệu được map qua model `FoodItem`.
-- Hàm gọi API có `try-catch` để bắt lỗi an toàn.
-- Code tách file theo từng tầng: `models`, `services`, `screens`, `widgets`.
-- AppBar hiển thị đúng cú pháp: `TH3 - [Họ tên Sinh viên] - [Mã SV]`.
+## Mục tiêu dự án
 
-## Cấu trúc chính
+- Hiển thị danh sách món ăn từ dữ liệu mạng, map về model chuẩn.
+- Đảm bảo đủ trạng thái UX: **Loading / Success / Error + Retry**.
+- Cung cấp trải nghiệm hiện đại: tìm kiếm, sắp xếp, bộ lọc, yêu thích, chi tiết món.
+- Tổ chức code theo module rõ ràng, dễ bảo trì.
 
-- `lib/models/food_item.dart`: Model món ăn.
-- `lib/services/food_api_service.dart`: Gọi API và parse JSON.
-- `lib/screens/menu_home_page.dart`: Quản lý luồng bất đồng bộ và render trạng thái UI.
-- `lib/widgets/food_card.dart`: Card hiển thị item món ăn.
-- `lib/widgets/error_state_view.dart`: UI lỗi và nút `Thử lại`.
-- `lib/main.dart`: Khởi tạo Material 3 theme và màn hình chính.
+## Tính năng chính
 
-## Chạy ứng dụng
+- Danh sách món ăn dạng **Grid/List** có thể chuyển đổi.
+- Tìm kiếm theo tên món, loại món, quốc gia.
+- Sắp xếp theo:
+	- Đánh giá
+	- Số thành phần
+	- Tên A → Z
+- Bộ lọc theo:
+	- Quốc gia
+	- Loại món
+	- Khẩu vị
+- Tab `Tất cả` và `Yêu thích`.
+- Trang chi tiết món ăn:
+	- Thông tin tóm tắt
+	- Thành phần
+	- Thông tin chi tiết
+	- Mô tả món ăn
+	- Nút lưu yêu thích + hoàn tác qua Snackbar
+
+## Luồng dữ liệu
+
+- Nguồn dữ liệu seed ban đầu: `DummyJSON Recipes API`.
+- Dữ liệu được lưu/đọc qua `Cloud Firestore` (collection `recipes`).
+- Xác thực người dùng bằng `Firebase Authentication` (anonymous sign-in).
+- Toàn bộ dữ liệu được map về model `FoodItem`.
+
+## Trạng thái giao diện
+
+- **Loading**: luôn hiển thị hiệu ứng chờ (`CircularProgressIndicator`) ở lúc khởi tạo và lúc tải dữ liệu.
+- **Success**: hiển thị danh sách món ăn bằng card/list gọn, có cắt chữ dài (`ellipsis`).
+- **Error + Retry**: hiển thị màn lỗi rõ ràng và nút `Thử lại` để gọi lại dữ liệu.
+
+## Cấu trúc thư mục chính
+
+- `lib/main.dart`: khởi tạo app, theme, bootstrap Firebase/Auth.
+- `lib/models/food_item.dart`: model dữ liệu món ăn.
+- `lib/services/food_api_service.dart`: seed + đọc dữ liệu Firestore.
+- `lib/services/favorite_service.dart`: quản lý trạng thái yêu thích.
+- `lib/screens/menu_home_page.dart`: màn danh sách, tìm kiếm, lọc, sắp xếp.
+- `lib/screens/food_detail_page.dart`: màn chi tiết món ăn.
+- `lib/widgets/food_card.dart`: item dạng card.
+- `lib/widgets/food_list_tile.dart`: item dạng list.
+- `lib/widgets/error_state_view.dart`: UI lỗi + nút thử lại.
+- `lib/utils/food_tags_mapper.dart`: chuẩn hóa quốc gia, suy luận tag khẩu vị.
+
+## Công nghệ sử dụng
+
+- Flutter
+- Dart
+- Firebase Core
+- Firebase Auth
+- Cloud Firestore
+- HTTP
+
+## Cách chạy dự án
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-## Tùy chỉnh thông tin sinh viên
+Chạy theo thiết bị cụ thể:
 
-Sửa trong `MenuHomePage` tại file `lib/screens/menu_home_page.dart`:
-
-- `studentName`
-- `studentId`
+```bash
+flutter run -d emulator-5554
+flutter run -d edge
+flutter run -d chrome
+```
