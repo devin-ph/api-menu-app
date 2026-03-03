@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "393055797197",
+    "project_id": "devin-menu-app",
+    "storage_bucket": "devin-menu-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:393055797197:android:e976fc7d767c5f04dc8e84",
+        "android_client_info": {
+          "package_name": "com.example.menu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDlb8wxUbwLAmKYy3f9XXWJB11iwSvmkWw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
