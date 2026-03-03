@@ -374,93 +374,101 @@ class _MenuHomePageState extends State<MenuHomePage> {
           if (checked) target.add(label);
         }
 
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-            child: StatefulBuilder(
-              builder: (context, setModal) => Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Center(
-                    child: Text(
-                      'Bộ lọc',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: [
-                        _buildFilterSection(
-                          title: 'Quốc gia',
-                          options: countryCounts,
-                          selected: tempCountries,
-                          onChanged: (label, checked) => setModal(
-                            () => toggleValue(tempCountries, label, checked),
-                          ),
-                        ),
-                        _buildFilterSection(
-                          title: 'Loại món',
-                          options: typeCounts,
-                          selected: tempTypes,
-                          onChanged: (label, checked) => setModal(
-                            () => toggleValue(tempTypes, label, checked),
-                          ),
-                        ),
-                        _buildFilterSection(
-                          title: 'Khẩu vị',
-                          options: tasteCounts,
-                          selected: tempTastes,
-                          onChanged: (label, checked) => setModal(
-                            () => toggleValue(tempTastes, label, checked),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5,
+          minChildSize: 0.5,
+          maxChildSize: 0.92,
+          expand: false,
+          builder: (context, scrollController) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+                child: StatefulBuilder(
+                  builder: (context, setModal) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => setModal(() {
-                            tempCountries.clear();
-                            tempTypes.clear();
-                            tempTastes.clear();
-                          }),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: kTextSecondary,
-                            side: const BorderSide(color: kTextSecondary),
+                      const Center(
+                        child: Text(
+                          'Bộ lọc',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
                           ),
-                          child: const Text('Đặt lại'),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(height: 12),
                       Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(
-                            context,
-                            _FilterResult(
-                              countries: tempCountries,
-                              types: tempTypes,
-                              tastes: tempTastes,
+                        child: ListView(
+                          controller: scrollController,
+                          children: [
+                            _buildFilterSection(
+                              title: 'Nguồn gốc',
+                              options: countryCounts,
+                              selected: tempCountries,
+                              onChanged: (label, checked) => setModal(
+                                () =>
+                                    toggleValue(tempCountries, label, checked),
+                              ),
+                            ),
+                            _buildFilterSection(
+                              title: 'Loại món',
+                              options: typeCounts,
+                              selected: tempTypes,
+                              onChanged: (label, checked) => setModal(
+                                () => toggleValue(tempTypes, label, checked),
+                              ),
+                            ),
+                            _buildFilterSection(
+                              title: 'Khẩu vị',
+                              options: tasteCounts,
+                              selected: tempTastes,
+                              onChanged: (label, checked) => setModal(
+                                () => toggleValue(tempTastes, label, checked),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => setModal(() {
+                                tempCountries.clear();
+                                tempTypes.clear();
+                                tempTastes.clear();
+                              }),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: kTextSecondary,
+                                side: const BorderSide(color: kTextSecondary),
+                              ),
+                              child: const Text('Đặt lại'),
                             ),
                           ),
-                          child: const Text('Áp dụng'),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FilledButton(
+                              onPressed: () => Navigator.pop(
+                                context,
+                                _FilterResult(
+                                  countries: tempCountries,
+                                  types: tempTypes,
+                                  tastes: tempTastes,
+                                ),
+                              ),
+                              child: const Text('Áp dụng'),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'dart:async';
 
 import 'firebase_options.dart';
 import 'screens/menu_home_page.dart';
@@ -261,6 +262,7 @@ class _AppBootstrap extends StatefulWidget {
 }
 
 class _AppBootstrapState extends State<_AppBootstrap> {
+  static const Duration _bootstrapTimeout = Duration(seconds: 12);
   late Future<void> _bootstrapFuture;
 
   @override
@@ -270,11 +272,29 @@ class _AppBootstrapState extends State<_AppBootstrap> {
   }
 
   Future<void> _initialize() async {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      ).timeout(_bootstrapTimeout);
+
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously().timeout(
+          _bootstrapTimeout,
+        );
+      }
+    } on TimeoutException {
+      throw Exception(
+        'Kết nối quá thời gian. Vui lòng kiểm tra mạng và thử lại.',
+      );
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'network-request-failed') {
+        throw Exception('Mất kết nối mạng. Vui lòng bật mạng rồi thử lại.');
+      }
+      throw Exception('Lỗi xác thực (${error.code}). Vui lòng thử lại.');
+    } on FirebaseException catch (error) {
+      throw Exception('Lỗi Firebase (${error.code}). Vui lòng thử lại.');
+    } catch (_) {
+      throw Exception('Không thể khởi tạo ứng dụng. Vui lòng thử lại.');
     }
   }
 
@@ -310,11 +330,16 @@ class _AppBootstrapState extends State<_AppBootstrap> {
         }
 
         if (snapshot.hasError) {
+          final message =
+              snapshot.error
+                  ?.toString()
+                  .replaceFirst('Exception: ', '')
+                  .trim() ??
+              'Không thể kết nối dịch vụ. Vui lòng kiểm tra mạng và thử lại.';
           return Scaffold(
             backgroundColor: kBg,
             body: ErrorStateView(
-              message:
-                  'Không thể kết nối dịch vụ. Vui lòng kiểm tra mạng và thử lại.',
+              message: message,
               onRetry: () {
                 setState(() {
                   _bootstrapFuture = _initialize();

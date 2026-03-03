@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 
 import '../main.dart'
     show kPrimary, kAccentGold, kBg, kSurface, kTextSecondary, kDivider;
@@ -16,6 +17,37 @@ class FoodDetailPage extends StatefulWidget {
 }
 
 class _FoodDetailPageState extends State<FoodDetailPage> {
+  Timer? _snackBarTimer;
+  static const _snackBarAnimation = AnimationStyle(
+    duration: Duration(milliseconds: 420),
+    reverseDuration: Duration(milliseconds: 320),
+    curve: Curves.easeOutCubic,
+    reverseCurve: Curves.easeInCubic,
+  );
+
+  void _dismissSnackBar({bool immediate = false}) {
+    _snackBarTimer?.cancel();
+    _snackBarTimer = null;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    if (immediate) {
+      messenger.removeCurrentSnackBar(reason: SnackBarClosedReason.hide);
+      return;
+    }
+    messenger.hideCurrentSnackBar(reason: SnackBarClosedReason.hide);
+  }
+
+  void _handleBack() {
+    _dismissSnackBar();
+    Navigator.maybePop(context);
+  }
+
+  @override
+  void dispose() {
+    _dismissSnackBar(immediate: true);
+    super.dispose();
+  }
+
   String _buildDishDescription(FoodItem item) {
     final country = normalizeCountryLabel(item.cuisine);
     final topIngredients = item.ingredients.take(4).join(', ');
@@ -36,6 +68,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
   void _showFavoriteSnackBar({required bool beforeFavorite}) {
     final item = widget.item;
     final messenger = ScaffoldMessenger.of(context);
+    _dismissSnackBar();
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
@@ -59,7 +92,14 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
           },
         ),
       ),
+      snackBarAnimationStyle: _snackBarAnimation,
     );
+
+    _snackBarTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      messenger.hideCurrentSnackBar(reason: SnackBarClosedReason.timeout);
+      _snackBarTimer = null;
+    });
   }
 
   void _toggleFavorite() {
@@ -88,316 +128,333 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
-      child: Scaffold(
-        backgroundColor: kBg,
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          leading: Padding(
-            padding: const EdgeInsets.all(8),
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.55),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white24, width: 1),
-                ),
-                child: const Icon(
-                  Icons.arrow_back_rounded,
-                  color: Colors.white,
-                  size: 20,
+      child: PopScope(
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) {
+            _dismissSnackBar(immediate: true);
+          }
+        },
+        child: Scaffold(
+          backgroundColor: kBg,
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: Padding(
+              padding: const EdgeInsets.all(8),
+              child: GestureDetector(
+                onTap: _handleBack,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.55),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white24, width: 1),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        body: Stack(
-          children: [
-            SizedBox(
-              height: imageH,
-              width: double.infinity,
-              child: Hero(
-                tag: 'food-image-${item.id}',
-                child: Image.network(
-                  item.thumbnailUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: kSurface,
-                    child: const Center(
-                      child: Icon(
-                        Icons.restaurant_rounded,
-                        color: kTextSecondary,
-                        size: 64,
+          body: Stack(
+            children: [
+              SizedBox(
+                height: imageH,
+                width: double.infinity,
+                child: Hero(
+                  tag: 'food-image-${item.id}',
+                  child: Image.network(
+                    item.thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: kSurface,
+                      child: const Center(
+                        child: Icon(
+                          Icons.restaurant_rounded,
+                          color: kTextSecondary,
+                          size: 64,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Positioned(
-              top: imageH - 80,
-              left: 0,
-              right: 0,
-              height: 80,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, kBg],
+              Positioned(
+                top: imageH - 80,
+                left: 0,
+                right: 0,
+                height: 80,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, kBg],
+                    ),
                   ),
                 ),
               ),
-            ),
-            CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(child: SizedBox(height: imageH - 20)),
-                SliverToBoxAdapter(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: kBg,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(28),
+              CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(child: SizedBox(height: imageH - 20)),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: kBg,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Container(
-                            width: 40,
-                            height: 4,
-                            margin: const EdgeInsets.only(top: 12, bottom: 20),
-                            decoration: BoxDecoration(
-                              color: kDivider,
-                              borderRadius: BorderRadius.circular(999),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(
+                                top: 12,
+                                bottom: 20,
+                              ),
+                              decoration: BoxDecoration(
+                                color: kDivider,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: kPrimary.withValues(alpha: 0.18),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  item.category.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: kPrimary,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 11,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                item.name,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 26,
-                                  height: 1.15,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  ...List.generate(5, (i) {
-                                    final full = i < item.rating.floor();
-                                    return Icon(
-                                      full
-                                          ? Icons.star_rounded
-                                          : (i < item.rating
-                                                ? Icons.star_half_rounded
-                                                : Icons.star_outline_rounded),
-                                      color: kAccentGold,
-                                      size: 20,
-                                    );
-                                  }),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    item.rating.toStringAsFixed(1),
-                                    style: const TextStyle(
-                                      color: kAccentGold,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  _InfoPill(
-                                    icon: Icons.public_rounded,
-                                    label: country,
-                                  ),
-                                  _InfoPill(
-                                    icon: Icons.restaurant_menu_rounded,
-                                    label: item.category,
-                                  ),
-                                  _InfoPill(
-                                    icon: Icons.inventory_2_rounded,
-                                    label:
-                                        '${item.ingredients.length} thành phần',
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-                          ),
-                        ),
-                        if (item.ingredients.isNotEmpty) ...[
-                          _SectionHeader(
-                            title: 'Thành phần (${item.ingredients.length})',
-                          ),
-                          const SizedBox(height: 12),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: item.ingredients.take(20).map((ing) {
-                                return Container(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
+                                    horizontal: 10,
+                                    vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: kSurface,
-                                    borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: kDivider),
+                                    color: kPrimary.withValues(alpha: 0.18),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    ing,
+                                    item.category.toUpperCase(),
                                     style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
+                                      color: kPrimary,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 11,
+                                      letterSpacing: 0.8,
                                     ),
                                   ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                        _SectionHeader(title: 'Thông tin chi tiết'),
-                        const SizedBox(height: 14),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: kSurface,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: kDivider),
-                            ),
-                            child: Column(
-                              children: [
-                                _FactRow(
-                                  icon: Icons.public_rounded,
-                                  label: 'Quốc gia',
-                                  value: country,
                                 ),
-                                const _FactDivider(),
-                                _FactRow(
-                                  icon: Icons.restaurant_menu_rounded,
-                                  label: 'Loại món',
-                                  value: item.category,
-                                ),
-                                const _FactDivider(),
-                                _FactRow(
-                                  icon: Icons.star_rounded,
-                                  label: 'Đánh giá cộng đồng',
-                                  value:
-                                      '${item.rating.toStringAsFixed(1)} / 5.0',
-                                ),
-                                const _FactDivider(),
-                                _FactRow(
-                                  icon: Icons.inventory_2_rounded,
-                                  label: 'Số thành phần',
-                                  value: '${item.ingredients.length}',
-                                ),
-                                if (item.tags.isNotEmpty) ...[
-                                  const _FactDivider(),
-                                  _FactRow(
-                                    icon: Icons.local_offer_rounded,
-                                    label: 'Khẩu vị',
-                                    value: deriveTasteTags(item).join(' • '),
+                                const SizedBox(height: 10),
+                                Text(
+                                  item.name,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 26,
+                                    height: 1.15,
+                                    letterSpacing: -0.5,
                                   ),
-                                ],
+                                ),
+                                const SizedBox(height: 14),
+                                Row(
+                                  children: [
+                                    ...List.generate(5, (i) {
+                                      final full = i < item.rating.floor();
+                                      return Icon(
+                                        full
+                                            ? Icons.star_rounded
+                                            : (i < item.rating
+                                                  ? Icons.star_half_rounded
+                                                  : Icons.star_outline_rounded),
+                                        color: kAccentGold,
+                                        size: 20,
+                                      );
+                                    }),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      item.rating.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        color: kAccentGold,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    _InfoPill(
+                                      icon: Icons.public_rounded,
+                                      label: country,
+                                    ),
+                                    _InfoPill(
+                                      icon: Icons.restaurant_menu_rounded,
+                                      label: item.category,
+                                    ),
+                                    _InfoPill(
+                                      icon: Icons.inventory_2_rounded,
+                                      label:
+                                          '${item.ingredients.length} thành phần',
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
                               ],
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 28),
-                        _SectionHeader(title: 'Về món ăn này'),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            _buildDishDescription(item),
-                            style: const TextStyle(
-                              color: kTextSecondary,
-                              fontSize: 15,
-                              height: 1.75,
+                          if (item.ingredients.isNotEmpty) ...[
+                            _SectionHeader(
+                              title: 'Thành phần (${item.ingredients.length})',
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(20, 8, 20, bottom + 24),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: FilledButton.icon(
-                              onPressed: _toggleFavorite,
-                              icon: Icon(
-                                isFavorite
-                                    ? Icons.favorite_rounded
-                                    : Icons.favorite_border_rounded,
-                                size: 20,
+                            const SizedBox(height: 12),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
                               ),
-                              label: Text(
-                                isFavorite
-                                    ? 'Đã lưu yêu thích'
-                                    : 'Lưu vào yêu thích',
-                              ),
-                              style: FilledButton.styleFrom(
-                                backgroundColor: kPrimary,
-                                foregroundColor: Colors.white,
-                                textStyle: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: item.ingredients.take(20).map((ing) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: kSurface,
+                                      borderRadius: BorderRadius.circular(999),
+                                      border: Border.all(color: kDivider),
+                                    ),
+                                    child: Text(
+                                      ing,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                             ),
+                            const SizedBox(height: 24),
+                          ],
+                          _SectionHeader(title: 'Thông tin chi tiết'),
+                          const SizedBox(height: 14),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: kSurface,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: kDivider),
+                              ),
+                              child: Column(
+                                children: [
+                                  _FactRow(
+                                    icon: Icons.public_rounded,
+                                    label: 'Nguồn gốc',
+                                    value: country,
+                                  ),
+                                  const _FactDivider(),
+                                  _FactRow(
+                                    icon: Icons.restaurant_menu_rounded,
+                                    label: 'Loại món',
+                                    value: item.category,
+                                  ),
+                                  const _FactDivider(),
+                                  _FactRow(
+                                    icon: Icons.star_rounded,
+                                    label: 'Đánh giá cộng đồng',
+                                    value:
+                                        '${item.rating.toStringAsFixed(1)} / 5.0',
+                                  ),
+                                  const _FactDivider(),
+                                  _FactRow(
+                                    icon: Icons.inventory_2_rounded,
+                                    label: 'Số thành phần',
+                                    value: '${item.ingredients.length}',
+                                  ),
+                                  if (item.tags.isNotEmpty) ...[
+                                    const _FactDivider(),
+                                    _FactRow(
+                                      icon: Icons.local_offer_rounded,
+                                      label: 'Khẩu vị',
+                                      value: deriveTasteTags(item).join(' • '),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 28),
+                          _SectionHeader(title: 'Về món ăn này'),
+                          const SizedBox(height: 12),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              _buildDishDescription(item),
+                              style: const TextStyle(
+                                color: kTextSecondary,
+                                fontSize: 15,
+                                height: 1.75,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              20,
+                              8,
+                              20,
+                              bottom + 24,
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: FilledButton.icon(
+                                onPressed: _toggleFavorite,
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 20,
+                                ),
+                                label: Text(
+                                  isFavorite
+                                      ? 'Đã lưu yêu thích'
+                                      : 'Lưu vào yêu thích',
+                                ),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: kPrimary,
+                                  foregroundColor: Colors.white,
+                                  textStyle: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

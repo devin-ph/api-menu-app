@@ -10,7 +10,8 @@ class FoodApiService {
   const FoodApiService();
 
   static const String _collection = 'recipes';
-  static const String _dummyEndpoint = 'https://dummyjson.com/recipes?limit=100';
+  static const String _dummyEndpoint =
+      'https://dummyjson.com/recipes?limit=100';
   static const Duration _timeout = Duration(seconds: 12);
   static bool _seededChecked = false;
 
@@ -23,14 +24,16 @@ class FoodApiService {
     final existing = await firestore
         .collection(_collection)
         .limit(1)
-        .get()
+        .get(const GetOptions(source: Source.server))
         .timeout(_timeout);
     if (existing.docs.isNotEmpty) {
       _seededChecked = true;
       return;
     }
 
-    final response = await http.get(Uri.parse(_dummyEndpoint)).timeout(_timeout);
+    final response = await http
+        .get(Uri.parse(_dummyEndpoint))
+        .timeout(_timeout);
     if (response.statusCode != 200) {
       throw Exception('Không thể tải dữ liệu nguồn để import Firebase.');
     }
@@ -65,12 +68,11 @@ class FoodApiService {
     try {
       try {
         await _seedFromDummyJsonIfNeeded().timeout(_timeout);
-      } catch (_) {
-      }
+      } catch (_) {}
 
       final snapshot = await FirebaseFirestore.instance
           .collection(_collection)
-          .get()
+          .get(const GetOptions(source: Source.server))
           .timeout(_timeout);
 
       final allItems = snapshot.docs
@@ -86,13 +88,20 @@ class FoodApiService {
 
       return result;
     } on FirebaseException catch (error) {
+      if (error.code == 'unavailable') {
+        throw Exception(
+          'Mất kết nối mạng. Vui lòng kiểm tra Internet và thử lại.',
+        );
+      }
       throw Exception(
         'Lỗi Firebase (${error.code}). Vui lòng kiểm tra cấu hình Firestore.',
       );
     } on TimeoutException {
       throw Exception('Yêu cầu quá thời gian. Vui lòng thử lại.');
     } catch (_) {
-      throw Exception('Mất kết nối mạng. Vui lòng kiểm tra Internet và thử lại.');
+      throw Exception(
+        'Mất kết nối mạng. Vui lòng kiểm tra Internet và thử lại.',
+      );
     }
   }
 }
