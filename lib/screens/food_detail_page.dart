@@ -294,6 +294,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                     _InfoPill(
                                       icon: Icons.public_rounded,
                                       label: country,
+                                      color: kPrimary,
                                     ),
                                     _InfoPill(
                                       icon: Icons.restaurant_menu_rounded,
@@ -376,6 +377,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                     label: 'Đánh giá cộng đồng',
                                     value:
                                         '${item.rating.toStringAsFixed(1)} / 5.0',
+                                    valueColor: kAccentGold,
                                   ),
                                   const _FactDivider(),
                                   _FactRow(
